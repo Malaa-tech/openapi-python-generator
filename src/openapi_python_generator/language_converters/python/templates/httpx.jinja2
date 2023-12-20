@@ -4,7 +4,7 @@
     client_id=api_config.client_id
     client_secret=api_config.client_secret
 
-    base_path = api_config.base_path
+    base_path = self.config.base_path
     path = f'{{ path_name }}'
     headers = {
         'Content-Type': 'application/json',
