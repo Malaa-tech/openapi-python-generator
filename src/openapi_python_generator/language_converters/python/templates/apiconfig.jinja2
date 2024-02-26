@@ -12,6 +12,7 @@ class ErrorResponseDetails(BaseModel):
     message: str
     ui_error_message: UIErrorMessage
     context: Optional[dict] = None
+    response: Optional[dict] = None
 
 
 class APIConfig(BaseModel):
@@ -28,7 +29,7 @@ class HTTPException(Exception):
 
         try:
             self.details = ErrorResponseDetails(**response.json().get("detail")) if response is not None else ErrorResponseDetails(** error.details.dict())
-            
+
             self.response = response.json().get("response", None)
 
         except Exception as e:
