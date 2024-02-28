@@ -28,9 +28,12 @@ class HTTPException(Exception):
     def __init__(self, response : Optional[Response] = None, error: Optional[Any]=None):
 
         try:
-            self.details = ErrorResponseDetails(**response.json().get("detail")) if response is not None else ErrorResponseDetails(** error.details.dict())
+        
+            self.details = ErrorResponseDetails(**response.json().get("detail"))
 
-            self.response = response.json().get("response", None)
+            if response.json().get("response", None):
+                self.details.response = response.json().get("response")
+
 
         except Exception as e:
             self.details = response.text
