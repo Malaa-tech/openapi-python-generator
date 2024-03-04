@@ -25,82 +25,73 @@
     query_params = {key:value for (key,value) in query_params.items() if value is not None}
 
     filtered_headers = {key:value for (key,value) in headers.items() if value is not None}
-    timeout = aiohttp.ClientTimeout(total=5*60, connect=1*60, sock_connect=1*60, sock_read=1*60)
+    timeout = aiohttp.ClientTimeout(total=3*60, connect=1*60)
 
-    retries = 3
-    for i in range(retries):
-        try:
-
-            {% if async_client %}
-        async with aiohttp.ClientSession( timeout=timeout) as session:
-                async with session.request(
-            {% else %}
-        with httpx.Client(base_url=base_path, verify=api_config.verify, timeout=api_config.timeout) as client:
-                response = client.request(
-            {% endif %}
-                    '{{ method }}',
-                    base_path + path,
-                    headers=filtered_headers,
-                    params=query_params,
-            {% if body_param %}
-                {% if use_orjson %}
-                    data=orjson.dumps({{ body_param }})
-                {% else %}
-                    json = {{ body_param }}
-                {% endif %}
-            {% endif %}
-                ) as inital_response:
-                    if inital_response.status != {{ return_type.status_code }}:    
-                        response = None
-                        {% if async_client %}
-        try:
-                            response = await inital_response.json()
-                        except Exception as e:
-                            response = await inital_response.text()
-                        {% else %}
-        try:
-                            response = inital_response.json()
-                        except Exception as e:
-                            response = inital_response.text
-                        {% endif %}
-                        {% if async_client %}             
-                        raise HTTPException(status_code=inital_response.status, response=response)
-                        {% else %} 
-                        raise HTTPException(status_code=inital_response.status_code, response=response)  
-                        {% endif %}                     
-        {% if return_type.type is none or return_type.type.converted_type is none %}
-                    return None
-        {% elif return_type.type is not none and return_type.type.converted_type == "str" and async_client  %}
-                    response = await inital_response.text()
-                    return response
-        {% elif return_type.type is not none and return_type.type.converted_type == "str" and not async_client %}
-                    return inital_response.text
-        {% elif return_type.complex_type and async_client %}
-            {%- if return_type.list_type is none %}
-                    response = await inital_response.json()
-                    return {{ return_type.type.converted_type }}(**response) if response is not None else {{ return_type.type.converted_type }}()
-            {%- else %}
-                    response = await inital_response.json()
-                    return [{{ return_type.list_type }}(**item) for item in response]
-            {%- endif %}
-
-        {% elif return_type.complex_type and not async_client%}
-            {%- if return_type.list_type is none %}
-                    response = inital_response.json()
-                    return {{ return_type.type.converted_type }}(**response) if response is not None else {{ return_type.type.converted_type }}()
-            {%- else %}
-                    response = await inital_response.json()
-                    return [{{ return_type.list_type }}(**item) for item in response]
-            {%- endif %}
-
-        {% elif async_client%}
-                    response = await inital_response.json()
-                    return response
+    {% if async_client %}
+async with aiohttp.ClientSession( timeout=timeout) as session:
+        async with session.request(
+    {% else %}
+with httpx.Client(base_url=base_path, verify=api_config.verify, timeout=api_config.timeout) as client:
+        response = client.request(
+    {% endif %}
+            '{{ method }}',
+            base_path + path,
+            headers=filtered_headers,
+            params=query_params,
+    {% if body_param %}
+        {% if use_orjson %}
+            data=orjson.dumps({{ body_param }})
         {% else %}
-                    return inital_response.json()
-        {% endif %} 
-        except ServerTimeoutError as e:
-            if i < retries - 1:  # i is zero indexed
-                continue
-            else:
-                raise e
+            json = {{ body_param }}
+        {% endif %}
+    {% endif %}
+        ) as inital_response:
+            if inital_response.status != {{ return_type.status_code }}:    
+                response = None
+                {% if async_client %}
+try:
+                    response = await inital_response.json()
+                except Exception as e:
+                    response = await inital_response.text()
+                {% else %}
+try:
+                    response = inital_response.json()
+                except Exception as e:
+                    response = inital_response.text
+                {% endif %}
+                {% if async_client %}             
+                raise HTTPException(status_code=inital_response.status, response=response)
+                {% else %} 
+                raise HTTPException(status_code=inital_response.status_code, response=response)  
+                {% endif %}                     
+{% if return_type.type is none or return_type.type.converted_type is none %}
+            return None
+{% elif return_type.type is not none and return_type.type.converted_type == "str" and async_client  %}
+            response = await inital_response.text()
+            return response
+{% elif return_type.type is not none and return_type.type.converted_type == "str" and not async_client %}
+            return inital_response.text
+{% elif return_type.complex_type and async_client %}
+    {%- if return_type.list_type is none %}
+            response = await inital_response.json()
+            return {{ return_type.type.converted_type }}(**response) if response is not None else {{ return_type.type.converted_type }}()
+    {%- else %}
+            response = await inital_response.json()
+            return [{{ return_type.list_type }}(**item) for item in response]
+    {%- endif %}
+
+{% elif return_type.complex_type and not async_client%}
+    {%- if return_type.list_type is none %}
+            response = inital_response.json()
+            return {{ return_type.type.converted_type }}(**response) if response is not None else {{ return_type.type.converted_type }}()
+    {%- else %}
+            response = await inital_response.json()
+            return [{{ return_type.list_type }}(**item) for item in response]
+    {%- endif %}
+
+{% elif async_client%}
+            response = await inital_response.json()
+            return response
+{% else %}
+            return inital_response.json()
+{% endif %}
