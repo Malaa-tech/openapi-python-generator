@@ -50,34 +50,33 @@ with httpx.Client(base_url=base_path, verify=api_config.verify, timeout=api_conf
                 raise HTTPException(response=inital_response)
 
 {% if return_type.type is none or return_type.type.converted_type is none %}
-    return None
+            return None
 {% elif return_type.type is not none and return_type.type.converted_type == "str" and async_client  %}
-    response = await inital_response.text()
-    return response
+            response = await inital_response.text()
+            return response
 {% elif return_type.type is not none and return_type.type.converted_type == "str" and not async_client %}
-    return inital_response.text
-
+            return inital_response.text
 {% elif return_type.complex_type and async_client %}
     {%- if return_type.list_type is none %}
-    response = await inital_response.json()
-    return {{ return_type.type.converted_type }}(**response) if response is not None else {{ return_type.type.converted_type }}()
+            response = await inital_response.json()
+            return {{ return_type.type.converted_type }}(**response) if response is not None else {{ return_type.type.converted_type }}()
     {%- else %}
-    response = await inital_response.json()
-    return [{{ return_type.list_type }}(**item) for item in response]
+            response = await inital_response.json()
+            return [{{ return_type.list_type }}(**item) for item in response]
     {%- endif %}
 
 {% elif return_type.complex_type and not async_client%}
     {%- if return_type.list_type is none %}
-    response = inital_response.json()
-    return {{ return_type.type.converted_type }}(**response) if response is not None else {{ return_type.type.converted_type }}()
+            response = inital_response.json()
+            return {{ return_type.type.converted_type }}(**response) if response is not None else {{ return_type.type.converted_type }}()
     {%- else %}
-    response = await inital_response.json()
-    return [{{ return_type.list_type }}(**item) for item in response]
+            response = await inital_response.json()
+            return [{{ return_type.list_type }}(**item) for item in response]
     {%- endif %}
 
 {% elif async_client%}
-    response = await inital_response.json()
-    return response
+            response = await inital_response.json()
+            return response
 {% else %}
-    return inital_response.json()
+            return inital_response.json()
 {% endif %}
