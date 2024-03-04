@@ -149,7 +149,7 @@ def write_data(data: ConversionResult, output: Union[str, Path]) -> None:
 def generate_data(
     source: Union[str, Path],
     output: Union[str, Path],
-    library: Optional[HTTPLibrary] = HTTPLibrary.httpx,
+    library: Optional[HTTPLibrary] = HTTPLibrary.aiohttp,
     env_token_name: Optional[str] = None,
     use_orjson: bool = False,
 ) -> None:

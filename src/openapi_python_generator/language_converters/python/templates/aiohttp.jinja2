@@ -1,12 +1,18 @@
-async def {{ operation_id }}({{ params }} api_config_override : Optional[APIConfig] = None) -> {% if return_type.type is none or return_type.type.converted_type is none %}None{% else %}{{ return_type.type.converted_type}}{% endif %}:
-    api_config = api_config_override if api_config_override else APIConfig()
+{%  if async_client %}async {% endif %}def {{ operation_id }}(self, {{ params }} api_config_override : Optional[APIConfig] = None) -> {% if return_type.type is none or return_type.type.converted_type is none %}None{% else %}{{ return_type.type.converted_type}}{% endif %}:
+    api_config = api_config_override if api_config_override else self.config
+    x_interaction_id=self.set_interaction_id(x_interaction_id)
+{% if 'client_id' in params %}
+    client_id= client_id or api_config.client_id
+{% endif %}
+{% if 'client_secret' in params %}
+    client_secret= client_secret or api_config.client_secret
+{% endif %}
 
     base_path = api_config.base_path
     path = f'{{ path_name }}'
     headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'Authorization': f'Bearer { api_config.get_access_token() }',
     {{ header_params | join(',\n') | safe }}
     }
 
@@ -17,8 +23,8 @@ async def {{ operation_id }}({{ params }} api_config_override : Optional[APIConf
     }
 
     query_params = {key:value for (key,value) in query_params.items() if value is not None}
-
-    async with aiohttp.ClientSession(headers=headers) as session:
+    timeout = aiohttp.ClientTimeout(total=3*60, connect=5, sock_connect=5, sock_read=5)
+    async with aiohttp.ClientSession(headers=headers, timeout=timeout) as session:
         async with session.request(
             '{{ method }}',
             base_path + path,
@@ -32,17 +38,22 @@ async def {{ operation_id }}({{ params }} api_config_override : Optional[APIConf
     {% endif %}
         ) as inital_response:
             if inital_response.status != {{ return_type.status_code }}:
-                raise HTTPException(inital_response.status, f'{{ operationId }} failed with status code: {inital_response.status}')
-            response = await inital_response.json()
+                raise HTTPException(response=inital_response)
 
 {% if return_type.type is none or return_type.type.converted_type is none %}
-            return None
+    return None
+{% elif return_type.type is not none and return_type.type.converted_type == "str" %}
+    response = await inital_response.text()
+    return response
 {% elif return_type.complex_type %}
     {%- if return_type.list_type is none %}
-            return {{ return_type.type.converted_type }}(**response) if response is not None else {{ return_type.type.converted_type }}()
+    response = await inital_response.json()
+    return {{ return_type.type.converted_type }}(**response) if response is not None else {{ return_type.type.converted_type }}()
     {%- else %}
-            return [{{ return_type.list_type }}(**item) for item in response]
+    response = await inital_response.json()
+    return [{{ return_type.list_type }}(**item) for item in response]
     {%- endif %}
 {% else %}
-            return response
+    response = await inital_response.json()
+    return res
 {% endif %}
