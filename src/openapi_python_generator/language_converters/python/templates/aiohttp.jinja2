@@ -8,7 +8,7 @@
     client_secret= client_secret or api_config.client_secret
 {% endif %}
 
-    base_path = api_config.base_path
+    base_path = self.config.base_path
     path = f'{{ path_name }}'
     headers = {
     'Content-Type': 'application/json',
