@@ -28,7 +28,7 @@
     timeout = aiohttp.ClientTimeout(total=3*60, connect=5, sock_connect=5, sock_read=5)
 
     {% if async_client %}
-async with aiohttp.ClientSession(headers=headers, timeout=timeout) as session:
+async with aiohttp.ClientSession( timeout=timeout) as session:
         async with session.request(
     {% else %}
 with httpx.Client(base_url=base_path, verify=api_config.verify, timeout=api_config.timeout) as client:
@@ -36,6 +36,7 @@ with httpx.Client(base_url=base_path, verify=api_config.verify, timeout=api_conf
     {% endif %}
             '{{ method }}',
             base_path + path,
+            headers=filtered_headers,
             params=query_params,
     {% if body_param %}
         {% if use_orjson %}
@@ -44,8 +45,7 @@ with httpx.Client(base_url=base_path, verify=api_config.verify, timeout=api_conf
             json = {{ body_param }}
         {% endif %}
     {% endif %}
-        ) 
-        as inital_response:
+        ) as inital_response:
             if inital_response.status != {{ return_type.status_code }}:
                 raise HTTPException(response=inital_response)
 
@@ -71,7 +71,7 @@ with httpx.Client(base_url=base_path, verify=api_config.verify, timeout=api_conf
     response = inital_response.json()
     return {{ return_type.type.converted_type }}(**response) if response is not None else {{ return_type.type.converted_type }}()
     {%- else %}
-    response = inital_response.json()
+    response = await inital_response.json()
     return [{{ return_type.list_type }}(**item) for item in response]
     {%- endif %}
 
