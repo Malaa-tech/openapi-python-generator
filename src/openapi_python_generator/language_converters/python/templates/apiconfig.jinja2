@@ -2,7 +2,7 @@ import httpx
 from pydantic import BaseModel
 from typing import Optional, Any, Union
 from httpx import Response
-
+from typing import Any
 class UIErrorMessage(BaseModel):
     en: str
     ar: str
@@ -25,28 +25,19 @@ class APIConfig(BaseModel):
 
 
 class HTTPException(Exception):
-    def __init__(self, response : Optional[Response] = None, error: Optional[Any]=None, async_client:Optional[bool] = False):
+    def __init__(self, response : Optional[Any] = None, error: Optional[Any]=None, status_code: Optional[int] = None):
 
         try:
-            if async_client:
-                self.details = ErrorResponseDetails(**response.json().get("detail"))
-
-                if response.json().get("response", None):
-                    self.details.response = response.json().get("response")
-            else: 
                 self.details = ErrorResponseDetails(**response.get("detail"))
+                if response.get("response", None):
+                    self.details.response = response.get("response")
 
         except Exception as e:
-            if hasattr(response, "text"):
-                self.details = response.text
-            else: 
                 self.details = response
                 
         if response is not None:
-            if hasattr(response, "status_code"):
-                self.status_code = response.status_code
-            elif hasattr(response, "status"):
-                self.status_code = response.status
+                self.status_code = status_code
+   
         elif hasattr(error, "status_code"):
             self.status_code = error.status_code
             self.http_code = error.status_code

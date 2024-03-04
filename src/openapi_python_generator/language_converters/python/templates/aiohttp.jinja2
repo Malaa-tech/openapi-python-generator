@@ -13,7 +13,7 @@
     headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    {{ header_params | join(',\n') | safe }}
+        {{ header_params | join(',\n') | safe }}
     }
 
     query_params : Dict[str,Any] = {
@@ -49,20 +49,20 @@ with httpx.Client(base_url=base_path, verify=api_config.verify, timeout=api_conf
             if inital_response.status != {{ return_type.status_code }}:    
                 response = None
                 {% if async_client %}
-                try:
+try:
                     response = await inital_response.json()
                 except Exception as e:
                     response = await inital_response.text()
                 {% else %}
-                try:
+try:
                     response = inital_response.json()
                 except Exception as e:
                     response = inital_response.text
                 {% endif %}
                 {% if async_client %}             
-                raise ApiException(status_code=inital_response.status, response=response)
+                raise HTTPException(status_code=inital_response.status, response=response)
                 {% else %} 
-                raise ApiException(status_code=inital_response.status_code, response=response)  
+                raise HTTPException(status_code=inital_response.status_code, response=response)  
                 {% endif %}                     
 {% if return_type.type is none or return_type.type.converted_type is none %}
             return None
