@@ -25,19 +25,23 @@ class APIConfig(BaseModel):
 
 
 class HTTPException(Exception):
-    def __init__(self, response : Optional[Response] = None, error: Optional[Any]=None):
+    def __init__(self, response : Optional[Response] = None, error: Optional[Any]=None, async_client:Optional[bool] = False):
 
         try:
-        
-            self.details = ErrorResponseDetails(**response.json().get("detail"))
+            if async_client:
+                self.details = ErrorResponseDetails(**response.json().get("detail"))
 
-            if response.json().get("response", None):
-                self.details.response = response.json().get("response")
-
+                if response.json().get("response", None):
+                    self.details.response = response.json().get("response")
+            else: 
+                self.details = ErrorResponseDetails(**response.get("detail"))
 
         except Exception as e:
-            self.details = response.text
-
+            if hasattr(response, "text"):
+                self.details = response.text
+            else: 
+                self.details = response
+                
         if response is not None:
             if hasattr(response, "status_code"):
                 self.status_code = response.status_code
