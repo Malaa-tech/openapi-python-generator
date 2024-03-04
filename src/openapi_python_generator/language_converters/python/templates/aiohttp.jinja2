@@ -23,9 +23,17 @@
     }
 
     query_params = {key:value for (key,value) in query_params.items() if value is not None}
+
+    filtered_headers = {key:value for (key,value) in headers.items() if value is not None}
     timeout = aiohttp.ClientTimeout(total=3*60, connect=5, sock_connect=5, sock_read=5)
-    async with aiohttp.ClientSession(headers=headers, timeout=timeout) as session:
+
+    {% if async_client %}
+async with aiohttp.ClientSession(headers=headers, timeout=timeout) as session:
         async with session.request(
+    {% else %}
+with httpx.Client(base_url=base_path, verify=api_config.verify, timeout=api_config.timeout) as client:
+        response = client.request(
+    {% endif %}
             '{{ method }}',
             base_path + path,
             params=query_params,
@@ -36,16 +44,20 @@
             json = {{ body_param }}
         {% endif %}
     {% endif %}
-        ) as inital_response:
+        ) 
+        as inital_response:
             if inital_response.status != {{ return_type.status_code }}:
                 raise HTTPException(response=inital_response)
 
 {% if return_type.type is none or return_type.type.converted_type is none %}
     return None
-{% elif return_type.type is not none and return_type.type.converted_type == "str" %}
+{% elif return_type.type is not none and return_type.type.converted_type == "str" and async_client  %}
     response = await inital_response.text()
     return response
-{% elif return_type.complex_type %}
+{% elif return_type.type is not none and return_type.type.converted_type == "str" and not async_client %}
+    return inital_response.text
+
+{% elif return_type.complex_type and async_client %}
     {%- if return_type.list_type is none %}
     response = await inital_response.json()
     return {{ return_type.type.converted_type }}(**response) if response is not None else {{ return_type.type.converted_type }}()
@@ -53,7 +65,19 @@
     response = await inital_response.json()
     return [{{ return_type.list_type }}(**item) for item in response]
     {%- endif %}
-{% else %}
+
+{% elif return_type.complex_type and not async_client%}
+    {%- if return_type.list_type is none %}
+    response = inital_response.json()
+    return {{ return_type.type.converted_type }}(**response) if response is not None else {{ return_type.type.converted_type }}()
+    {%- else %}
+    response = inital_response.json()
+    return [{{ return_type.list_type }}(**item) for item in response]
+    {%- endif %}
+
+{% elif async_client%}
     response = await inital_response.json()
-    return res
+    return response
+{% else %}
+    return inital_response.json()
 {% endif %}
