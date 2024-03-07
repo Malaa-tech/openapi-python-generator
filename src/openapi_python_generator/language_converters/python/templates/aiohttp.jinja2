@@ -25,7 +25,7 @@
     query_params = {key:value for (key,value) in query_params.items() if value is not None}
 
     filtered_headers = {key:value for (key,value) in headers.items() if value is not None}
-    timeout = aiohttp.ClientTimeout(total=3*60, connect=1*60)
+    timeout = aiohttp.ClientTimeout(total=5*60, connect=1*60)
 
     {% if async_client %}
 async with aiohttp.ClientSession( timeout=timeout) as session:
