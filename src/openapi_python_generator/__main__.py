@@ -12,7 +12,7 @@ from openapi_python_generator.generate_data import generate_data
 @click.argument("output")
 @click.option(
     "--library",
-    default=HTTPLibrary.aiohttp,
+    default=HTTPLibrary.httpx,
     type=HTTPLibrary,
     show_default=True,
     help="HTTP library to use in the generation of the client.",
@@ -36,7 +36,7 @@ from openapi_python_generator.generate_data import generate_data
 def main(
     source: str,
     output: str,
-    library: Optional[HTTPLibrary] = HTTPLibrary.aiohttp,
+    library: Optional[HTTPLibrary] = HTTPLibrary.httpx,
     env_token_name: Optional[str] = None,
     use_orjson: bool = False,
 ) -> None:
