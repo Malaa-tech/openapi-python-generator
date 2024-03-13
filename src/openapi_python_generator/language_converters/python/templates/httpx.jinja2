@@ -46,7 +46,6 @@ with httpx.Client(base_url=base_path, verify=api_config.verify, timeout=api_conf
     )
 
     if response.status_code != {{ return_type.status_code }}:
-        raise HTTPException(response=response)
         try:
             _response = response.json()
         except Exception as e:
