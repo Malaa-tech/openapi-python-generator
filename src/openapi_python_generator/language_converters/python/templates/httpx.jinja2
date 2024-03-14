@@ -50,7 +50,7 @@ with httpx.Client(base_url=base_path, verify=api_config.verify, timeout=api_conf
             _response = response.json()
         except Exception as e:
             _response = response.text            
-        raise HTTPException(status_code=_response.status_code, response=_response)
+        raise HTTPException(status_code=response.status_code, response=_response)
   
 
 {% if return_type.type is none or return_type.type.converted_type is none %}
